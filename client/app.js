@@ -1,11 +1,15 @@
 import React from 'react';
 
-import { Navbar } from './components';
+import { 
+  Graph,
+  Navbar
+} from './components';
 
 const App = () => {
   return (
     <div>
       <Navbar />
+      <Graph />
     </div>
   )
 }
