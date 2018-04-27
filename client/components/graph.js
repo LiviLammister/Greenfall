@@ -10,8 +10,6 @@ class Graph extends Component {
   constructor() {
     super();
     this.state = {
-      nodes: [],
-      links: [],
       flows:
         /**
          * Money-in has positive value
@@ -21,32 +19,23 @@ class Graph extends Component {
           { id: 1, name: 'paycheck', amt: 5000.00, category: 'paycheck' },
           { id: 2, name: 'etsy',     amt: 250.00,  category: 'side-hustle' },
           { id: 3, name: 'kombucha', amt: -5.50,   category: 'food/drink' },
+          { id: 4, name: 'resevoir', amt: 0,       category: 'resevoir'},
         ],
     }
   }
-
 
   /**
    * Converts an (on-state) flow into a React-vis-compatible node
    * @param flow Flow datum from state
    * @returns React-vis-friendly node
    */
-  createNode = flow => ({ name : flow.name , key : flow.key, category : flow.category });
+  createNode = flow => ({ name : flow.name , key : flow.id, category : flow.category });
 
-  
   /**
    * Turn data on state to React-vis-friendly nodes
    * @returns Array of nodes that can be directly used by React-vis
    */
-  createNodes = () => {
-    const nodes = this.state.flows.map(flow => this.createNode(flow));
-    nodes.push({ 
-      name     : 'resevoir', 
-      key      : nodes.length,
-      category : 'resevoir'
-    });
-    return nodes;
-  }
+  createNodes = () => this.state.flows.map(flow => this.createNode(flow));
   
   /**
    * Creates a link between two nodes
@@ -56,27 +45,40 @@ class Graph extends Component {
    * 
    * @returns React-vis compatible link
    */
-  createLink = (source, target , value) => ({source, target, value});
+  createLink = (source, target, value) => ({source, target, value})
 
   /**
    * @param node 
    * @returns Flow associated with passed-in node
    */
-  getFlowFromNode = node => (this.state.flows(flow => flow.id === node.id))[0]
+  getFlowFromNode = node => {
+    for (let i = 0; i < this.state.flows.length; i++) {
+      if (this.state.flows[i].id === node.key) return this.state.flows[i]
+    }
+  }
     
   /**
    * Gets amount associated with a node
    */
-  getAmt = node => this.getFlowFromNode(node).amt
+  getAmt = node => this.getFlowFromNode(node).amt;
   
   /**
    * Creates all links associated with income.  
    * @returns Array of links
    */
   createIncomeLinks = nodes => {
-    const incomeNodes = nodes.filter(node => getAmt(node) > 0);
-    const resevoir    = nodes[nodes.length];
-    return incomeNodes.map(node => createLink(node, resevoir, getAmt(node)))
+    // Get all nodes with positive amount
+    const incomeNodes = nodes.filter(node => this.getAmt(node) > 0);
+
+    // Get the resevoir (only flow with amt of 0)
+    const resevoir = nodes.filter(node => this.getAmt(node) === 0)[0];
+
+    const incomeLinks = [];
+    for (let i = 0; i < incomeNodes.length; i++) {
+      incomeLinks.push(this.createLink(this.getNodeIndexByKey(incomeNodes[i].key, nodes), this.getNodeIndexByKey(resevoir.key, nodes), this.getAmt(incomeNodes[i])))
+    }
+
+    return incomeLinks;
   }
 
   /**
@@ -84,23 +86,17 @@ class Graph extends Component {
    * @param {*} key Key of the desired node
    * @returns {*} 
    */
-  getNodeIndexByKey = key => {
+  getNodeIndexByKey = (key, nodes) => {
     for (let i = 0; i < nodes.length; i++) {
       if (nodes[i].key === key) return i
     }
   }
 
   render() {
-    const testNodes = this.createNodes();
-    testNodes.forEach(node => {
-      console.log('node: ', node);
-    });
-    const nodes = [{ name: 'a' }, { name: 'b' }, { name: 'c' }];
-    const links = [
-      { source: 0, target: 1, value: 10 },
-      { source: 0, target: 2, value: 20 },
-      { source: 1, target: 2, value: 20 }
-    ];
+    const nodes = this.createNodes();
+    console.log('render nodes: ', nodes);
+    const links = this.createIncomeLinks(nodes);
+    console.log('render links: ', links);
     return (
       <Container textAlign='center'>
         <Sankey
