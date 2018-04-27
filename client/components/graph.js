@@ -10,7 +10,9 @@ class Graph extends Component {
   constructor() {
     super();
     this.state = {
-      flows:
+      nodes : [],
+      links : [],
+      flows :
         /**
          * Money-in has positive value
          * Money-out has negative value
@@ -19,7 +21,7 @@ class Graph extends Component {
           { id: 1, name: 'paycheck', amt: 5000.00, category: 'paycheck' },
           { id: 2, name: 'etsy',     amt: 250.00,  category: 'side-hustle' },
           { id: 3, name: 'kombucha', amt: -5.50,   category: 'food/drink' },
-          { id: 4, name: 'resevoir', amt: 0,       category: 'resevoir'},
+          { id: 4, name: ''        , amt: 0,       category: 'resevoir'},
         ],
     }
   }
@@ -48,20 +50,16 @@ class Graph extends Component {
   createLink = (source, target, value) => ({source, target, value})
 
   /**
-   * @param node 
-   * @returns Flow associated with passed-in node
+   * Creates the links of Sankey
    */
-  getFlowFromNode = node => {
-    for (let i = 0; i < this.state.flows.length; i++) {
-      if (this.state.flows[i].id === node.key) return this.state.flows[i]
-    }
+  createLinks = (nodes) => {
+    const links = [];
+    links.push.apply(links, this.createIncomeLinks(nodes));
+    links.push.apply(links, this.createSpendingLinks(nodes));
+    console.log('createlinks: ', links)
+    return links;
   }
-    
-  /**
-   * Gets amount associated with a node
-   */
-  getAmt = node => this.getFlowFromNode(node).amt;
-  
+
   /**
    * Creates all links associated with income.  
    * @returns Array of links
@@ -81,6 +79,38 @@ class Graph extends Component {
     return incomeLinks;
   }
 
+  createSpendingLinks = nodes => {
+    // Get all nodes with negative amount
+    const spendingNodes = nodes.filter(node => this.getAmt(node) < 0);
+
+    // Get the resevoir (only flow with amt of 0)
+    const resevoir = nodes.filter(node => this.getAmt(node) === 0)[0];
+
+    const spendingLinks = [];
+    for (let i = 0; i < spendingNodes.length; i++) {
+      spendingLinks.push(this.createLink(this.getNodeIndexByKey(resevoir.key, nodes), this.getNodeIndexByKey(spendingNodes[i].key, nodes), this.getAmt(spendingNodes[i])))
+    }
+
+    return spendingLinks;
+  }
+
+  /**
+   * @param node 
+   * @returns Flow associated with passed-in node
+   */
+  getFlowFromNode = node => {
+    for (let i = 0; i < this.state.flows.length; i++) {
+      if (this.state.flows[i].id === node.key) return this.state.flows[i]
+    }
+  }
+    
+  /**
+   * Gets amount associated with a node
+   */
+  getAmt = node => this.getFlowFromNode(node).amt;
+  
+  
+
   /**
    * Gets the index of a node with a given key
    * @param {*} key Key of the desired node
@@ -94,9 +124,7 @@ class Graph extends Component {
 
   render() {
     const nodes = this.createNodes();
-    console.log('render nodes: ', nodes);
-    const links = this.createIncomeLinks(nodes);
-    console.log('render links: ', links);
+    const links = this.createLinks(nodes);
     return (
       <Container textAlign='center'>
         <Sankey
