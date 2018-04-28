@@ -3,26 +3,26 @@ import {
   Sankey,
 } from 'react-vis';
 import {
+  Button,
   Container,
+  Form,
+  Modal,
 } from 'semantic-ui-react';
 
 class Graph extends Component {
   constructor() {
     super();
     this.state = {
-      nodes : [],
-      links : [],
-      flows :
-        /**
-         * Money-in has positive value
-         * Money-out has negative value
-         */
+      flows:
         [
           { id: 1, name: 'paycheck', amt: 5000.00, category: 'paycheck' },
-          { id: 2, name: 'etsy',     amt: 250.00,  category: 'side-hustle' },
-          { id: 3, name: 'kombucha', amt: -5.50,   category: 'food/drink' },
-          { id: 4, name: ''        , amt: 0,       category: 'resevoir'},
+          { id: 2, name: 'etsy', amt: 250.00, category: 'side-hustle' },
+          { id: 3, name: 'kombucha', amt: -50.00, category: 'food/drink' },
+          { id: 4, name: '', amt: 0, category: 'resevoir' },
         ],
+      name     : '',
+      amt      : 0,
+      category : 'misc',
     }
   }
 
@@ -31,14 +31,14 @@ class Graph extends Component {
    * @param flow Flow datum from state
    * @returns React-vis-friendly node
    */
-  createNode = flow => ({ name : flow.name , key : flow.id, category : flow.category });
-
+  createNode = flow => ({ name: flow.name, key: flow.id, category: flow.category });
+  
   /**
    * Turn data on state to React-vis-friendly nodes
    * @returns Array of nodes that can be directly used by React-vis
    */
   createNodes = () => this.state.flows.map(flow => this.createNode(flow));
-  
+
   /**
    * Creates a link between two nodes
    * @param {*} source Source node.
@@ -47,7 +47,7 @@ class Graph extends Component {
    * 
    * @returns React-vis compatible link
    */
-  createLink = (source, target, value) => ({source, target, value})
+  createLink = (source, target, value) => ({ source, target, value: Math.abs(value) })
 
   /**
    * Creates the links of Sankey
@@ -56,7 +56,6 @@ class Graph extends Component {
     const links = [];
     links.push.apply(links, this.createIncomeLinks(nodes));
     links.push.apply(links, this.createSpendingLinks(nodes));
-    console.log('createlinks: ', links)
     return links;
   }
 
@@ -103,13 +102,11 @@ class Graph extends Component {
       if (this.state.flows[i].id === node.key) return this.state.flows[i]
     }
   }
-    
+
   /**
    * Gets amount associated with a node
    */
   getAmt = node => this.getFlowFromNode(node).amt;
-  
-  
 
   /**
    * Gets the index of a node with a given key
@@ -122,18 +119,63 @@ class Graph extends Component {
     }
   }
 
+  handleChange = (e, { name, value }) => this.setState({ [name]: value })
+
+  handleSubmit = () => {
+    const {name, amt, category, flows} = this.state;
+    
+    // If a flow with the entered name exists, add it to that flow's amt
+    let newFlows = [];
+    let flowExists = false
+    for (let i = 0; i < flows.length; i++) {
+      newFlows.push(flows[i])
+      if (flows[i].name === name) {
+        flows[i].amt = Number(flows[i].amt)+Number(amt);
+        flowExists = true;
+      }
+    }
+
+    if (!flowExists) {
+      const id = flows.length + 1
+      newFlows.push({name, amt, category, id})
+    }
+
+    this.setState({
+      name  : '',
+      amt   : 0.00,
+      flows : newFlows,
+    })
+  }
+
   render() {
     const nodes = this.createNodes();
     const links = this.createLinks(nodes);
+    const { name, amt } = this.state;
+    console.log(this.state)
     return (
-      <Container textAlign='center'>
+      <Container>
         <Sankey
           nodes={nodes}
           links={links}
           width={1000}
           height={500}
         />
+        <Modal trigger={<Button>Add Flow</Button>}>
+          <Modal.Header>Add a Flow</Modal.Header>
+          <Modal.Content>
+            <Form onSubmit={this.handleSubmit}>
+              <Form.Group>
+                <Form.Input label="Name"   name="name" value={name} onChange={this.handleChange}/>
+              </Form.Group>
+              <Form.Group>
+                <Form.Input label="Amount" name="amt"  value={amt}  onChange={this.handleChange}/>
+              </Form.Group>
+              <Form.Button content='Submit' />
+            </Form>
+          </Modal.Content>
+        </Modal>
       </Container>
+
     );
   }
 }
