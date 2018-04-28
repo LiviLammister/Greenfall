@@ -15,14 +15,15 @@ class Graph extends Component {
     this.state = {
       flows:
         [
-          { id: 1, name: 'paycheck', amt: 5000.00, category: 'paycheck' },
-          { id: 2, name: 'etsy', amt: 250.00, category: 'side-hustle' },
-          { id: 3, name: 'kombucha', amt: -50.00, category: 'food/drink' },
-          { id: 4, name: '', amt: 0, category: 'resevoir' },
+          { id: 1, name: 'paycheck', amt: 5000.00, type: "income",   category: 'paycheck' },
+          { id: 2, name: 'etsy',     amt: 250.00,  type: "income",   category: 'side-hustle' },
+          { id: 3, name: 'kombucha', amt: 50.00,   type: "expense",  category: 'food/drink' },
+          { id: 4, name: ''        , amt: 0,       type: "resevoir", category: 'resevoir' },
         ],
-      name     : '',
-      amt      : 0,
-      category : 'misc',
+      name      : '',
+      amt       : 0,
+      type      : "income",
+      category  : 'misc',
     }
   }
 
@@ -47,7 +48,7 @@ class Graph extends Component {
    * 
    * @returns React-vis compatible link
    */
-  createLink = (source, target, value) => ({ source, target, value: Math.abs(value) })
+  createLink = (source, target, value) => ({ source, target, value })
 
   /**
    * Creates the links of Sankey
@@ -55,7 +56,7 @@ class Graph extends Component {
   createLinks = (nodes) => {
     const links = [];
     links.push.apply(links, this.createIncomeLinks(nodes));
-    links.push.apply(links, this.createSpendingLinks(nodes));
+    links.push.apply(links, this.createExpenseLinks(nodes));
     return links;
   }
 
@@ -65,10 +66,10 @@ class Graph extends Component {
    */
   createIncomeLinks = nodes => {
     // Get all nodes with positive amount
-    const incomeNodes = nodes.filter(node => this.getAmt(node) > 0);
+    const incomeNodes = nodes.filter(node => this.getFlowFromNode(node).type === "income");
 
     // Get the resevoir (only flow with amt of 0)
-    const resevoir = nodes.filter(node => this.getAmt(node) === 0)[0];
+    const resevoir = nodes.filter(node => this.getFlowFromNode(node).type === 'resevoir')[0];
 
     const incomeLinks = [];
     for (let i = 0; i < incomeNodes.length; i++) {
@@ -78,12 +79,12 @@ class Graph extends Component {
     return incomeLinks;
   }
 
-  createSpendingLinks = nodes => {
+  createExpenseLinks = nodes => {
     // Get all nodes with negative amount
-    const spendingNodes = nodes.filter(node => this.getAmt(node) < 0);
+    const spendingNodes = nodes.filter(node => this.getFlowFromNode(node).type === 'expense');
 
     // Get the resevoir (only flow with amt of 0)
-    const resevoir = nodes.filter(node => this.getAmt(node) === 0)[0];
+    const resevoir = nodes.filter(node => this.getFlowFromNode(node).type === 'resevoir')[0];
 
     const spendingLinks = [];
     for (let i = 0; i < spendingNodes.length; i++) {
@@ -119,7 +120,9 @@ class Graph extends Component {
     }
   }
 
-  handleChange = (e, { name, value }) => this.setState({ [name]: value })
+  handleChange = (e, { name, value }) => {
+    return this.setState({ [name]: value })
+  }
 
   handleSubmit = () => {
     const {name, amt, category, flows} = this.state;
@@ -151,7 +154,10 @@ class Graph extends Component {
     const nodes = this.createNodes();
     const links = this.createLinks(nodes);
     const { name, amt } = this.state;
-    console.log(this.state)
+    const options = [
+      { key: "Income",  name: 'type', text: "Income",  value: "income" },
+      { key: "Expense", name: 'type', text: "Expense", value: "expense" },
+    ]
     return (
       <Container>
         <Sankey
@@ -165,10 +171,11 @@ class Graph extends Component {
           <Modal.Content>
             <Form onSubmit={this.handleSubmit}>
               <Form.Group>
-                <Form.Input label="Name"   name="name" value={name} onChange={this.handleChange}/>
+                <Form.Input fluid label="Name" name="name" value={name} onChange={this.handleChange}/>
               </Form.Group>
-              <Form.Group>
+              <Form.Group widths="equal">
                 <Form.Input label="Amount" name="amt"  value={amt}  onChange={this.handleChange}/>
+                <Form.Select options={options} placeholder="Type..." />
               </Form.Group>
               <Form.Button content='Submit' />
             </Form>
