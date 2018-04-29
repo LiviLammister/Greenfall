@@ -55,7 +55,7 @@ class Graph extends Component {
    * 
    * @returns React-vis compatible link
    */
-  createLink = (source, target, value) => ({ source, target, value })
+  createLink = (source, target, value, color) => ({ source, target, value, color })
 
   /**
    * Creates the links of Sankey
@@ -80,22 +80,22 @@ class Graph extends Component {
 
     const incomeLinks = [];
     for (let i = 0; i < incomeNodes.length; i++) {
-      incomeLinks.push(this.createLink(this.getNodeIndexByKey(incomeNodes[i].key, nodes), this.getNodeIndexByKey(resevoir.key, nodes), this.getAmt(incomeNodes[i])))
+      incomeLinks.push(this.createLink(this.getNodeIndexByKey(incomeNodes[i].key, nodes), this.getNodeIndexByKey(resevoir.key, nodes), this.getAmt(incomeNodes[i]), "green"))
     }
 
     return incomeLinks;
   }
 
   createExpenseLinks = nodes => {
-    // Get all nodes with negative amount
-    const spendingNodes = nodes.filter(node => this.getFlowFromNode(node).type === 'expense');
+    // Get all Expense nodes
+    const spendingNodes = nodes.filter(node => this.getFlowFromNode(node).type === EXPENSE);
 
     // Get the resevoir (only flow with amt of 0)
-    const resevoir = nodes.filter(node => this.getFlowFromNode(node).type === 'resevoir')[0];
+    const resevoir = nodes.filter(node => this.getFlowFromNode(node).type === RESEVOIR)[0];
 
     const spendingLinks = [];
     for (let i = 0; i < spendingNodes.length; i++) {
-      spendingLinks.push(this.createLink(this.getNodeIndexByKey(resevoir.key, nodes), this.getNodeIndexByKey(spendingNodes[i].key, nodes), this.getAmt(spendingNodes[i])))
+      spendingLinks.push(this.createLink(this.getNodeIndexByKey(resevoir.key, nodes), this.getNodeIndexByKey(spendingNodes[i].key, nodes), this.getAmt(spendingNodes[i]), "red"))
     }
 
     return spendingLinks;
@@ -141,9 +141,21 @@ class Graph extends Component {
     return flows[largestIndex];
   }
 
-  handleChange = (e, { name, value }) => {
-    return this.setState({ [name]: value })
+  largestExpense = () => {
+    const flows = this.state.flows;
+    let largestVal = 0;
+    let largestIndex = 0
+    for (let i = 0; i < flows.length; i++) {
+      if (flows[i].type !== EXPENSE) continue;
+      if (flows[i].amt > largestVal) {
+        largestVal = flows[i].amt;
+        largestIndex = i;
+      }
+    }
+    return flows[largestIndex];
   }
+
+  handleChange = (e, { name, value }) => this.setState({ [name]: value })
 
   handleSubmit = () => {
     const {name, amt, type, category, flows} = this.state;
@@ -174,17 +186,19 @@ class Graph extends Component {
 
   handleOpen = () => this.setState({ modalOpen: true })
 
-  handleClose = () => {
-    this.setState({ modalOpen: false })
-  }
+  handleClose = () => this.setState({ modalOpen: false })
+  
 
   render() {
     const nodes = this.createNodes();
     const links = this.createLinks(nodes);
     const { name, amt } = this.state;
+    const largestIncome = this.largestIncome();
+    const largestExpense = this.largestExpense();
+    console.log(this.state)
     const options = [
-      { key: "Income", name: 'type', text: "Income", value: INCOME },
-      { key: "Expense", name: 'type', text: "Expense", value: EXPENSE },
+      { key: "Income", text: "Income", value: INCOME },
+      { key: "Expense", text: "Expense", value: EXPENSE },
     ]
     console.log(this.state)
     return (
@@ -203,12 +217,12 @@ class Graph extends Component {
           <Modal.Header>Add a Flow</Modal.Header>
           <Modal.Content>
             <Form onSubmit={this.handleSubmit}>
-              <Form.Group>
-                <Form.Input fluid label="Name" name="name" value={name} onChange={this.handleChange} />
+              <Form.Group fluid>
+                <Form.Input label="Name" name="name" value={name} onChange={this.handleChange} />
               </Form.Group>
               <Form.Group widths="equal">
                 <Form.Input label="Amount" name="amt" value={amt} onChange={this.handleChange} />
-                <Form.Select options={options} placeholder="Type..." />
+                <Form.Select name="type" options={options} placeholder="Type..." onChange={this.handleChange}/>
               </Form.Group>
               <Modal.Actions>
                 <Form.Button content='Submit' />
@@ -216,10 +230,14 @@ class Graph extends Component {
             </Form>
           </Modal.Content>
         </Modal>
-        <Statistic.Group widths='one'>
+        <Statistic.Group widths='two'>
           <Statistic color="green">
-            <Statistic.Value><Icon name='dollar' />{this.largestIncome().amt}</Statistic.Value>
-            <Statistic.Label>Largest Income: {this.largestIncome().name}</Statistic.Label>
+            <Statistic.Value><Icon name='dollar' />{largestIncome.amt}</Statistic.Value>
+            <Statistic.Label>Largest Income: {largestIncome.name}</Statistic.Label>
+          </Statistic>
+          <Statistic color="red">
+            <Statistic.Value><Icon name="dollar" />{largestExpense.amt}</Statistic.Value>
+            <Statistic.Label>Largest Expense: {largestExpense.name}</Statistic.Label>
           </Statistic>
         </Statistic.Group>
       </Container>
