@@ -24,6 +24,7 @@ class Graph extends Component {
       amt       : 0,
       type      : "income",
       category  : 'misc',
+      modalOpen : false,
     }
   }
 
@@ -148,6 +149,12 @@ class Graph extends Component {
       amt   : 0.00,
       flows : newFlows,
     })
+    this.handleClose()
+  }
+
+  handleOpen = () => this.setState({ modalOpen: true })
+  handleClose = () => {
+    this.setState({ modalOpen: false })
   }
 
   render() {
@@ -155,9 +162,10 @@ class Graph extends Component {
     const links = this.createLinks(nodes);
     const { name, amt } = this.state;
     const options = [
-      { key: "Income",  name: 'type', text: "Income",  value: "income" },
+      { key: "Income", name: 'type', text: "Income", value: "income" },
       { key: "Expense", name: 'type', text: "Expense", value: "expense" },
     ]
+    
     return (
       <Container>
         <Sankey
@@ -166,7 +174,11 @@ class Graph extends Component {
           width={1000}
           height={500}
         />
-        <Modal trigger={<Button>Add Flow</Button>}>
+        <Modal 
+          trigger={<Button onClick={this.handleOpen}>Add Flow</Button>}
+          open={this.state.modalOpen}
+          onClose={this.handleClose}
+          >
           <Modal.Header>Add a Flow</Modal.Header>
           <Modal.Content>
             <Form onSubmit={this.handleSubmit}>
@@ -177,7 +189,9 @@ class Graph extends Component {
                 <Form.Input label="Amount" name="amt"  value={amt}  onChange={this.handleChange}/>
                 <Form.Select options={options} placeholder="Type..." />
               </Form.Group>
-              <Form.Button content='Submit' />
+              <Modal.Actions>
+              <Form.Button content='Submit'/>
+              </Modal.Actions>
             </Form>
           </Modal.Content>
         </Modal>
