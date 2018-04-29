@@ -5,6 +5,7 @@ import {
 import {
   Button,
   Container,
+  Divider,
   Form,
   Icon,
   Modal,
@@ -155,6 +156,29 @@ class Graph extends Component {
     return flows[largestIndex];
   }
 
+  totalIncome = () => {
+    const flows = this.state.flows;
+    let result = 0;
+    for (let i = 0; i < flows.length; i++) {
+      if (flows[i].type === INCOME) {
+        result += flows[i].amt
+      } 
+    }
+    return result;
+  }
+
+
+  totalExpenses = () => {
+    const flows = this.state.flows;
+    let result = 0;
+    for (let i = 0; i < flows.length; i++) {
+      if (flows[i].type === EXPENSE) {
+        result += flows[i].amt;
+      } 
+    }
+    return result;
+  }
+
   handleChange = (e, { name, value }) => this.setState({ [name]: value })
 
   handleSubmit = () => {
@@ -195,6 +219,8 @@ class Graph extends Component {
     const { name, amt } = this.state;
     const largestIncome = this.largestIncome();
     const largestExpense = this.largestExpense();
+    const totalIncome = this.totalIncome();
+    const totalExpenses = this.totalExpenses();
     console.log(this.state)
     const options = [
       { key: "Income", text: "Income", value: INCOME },
@@ -230,7 +256,8 @@ class Graph extends Component {
             </Form>
           </Modal.Content>
         </Modal>
-        <Statistic.Group widths='two'>
+        <Divider />
+        <Statistic.Group widths='four'>
           <Statistic color="green">
             <Statistic.Value><Icon name='dollar' />{largestIncome.amt}</Statistic.Value>
             <Statistic.Label>Largest Income: {largestIncome.name}</Statistic.Label>
