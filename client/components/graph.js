@@ -6,8 +6,14 @@ import {
   Button,
   Container,
   Form,
+  Icon,
   Modal,
+  Statistic,
 } from 'semantic-ui-react';
+
+const INCOME   = 'income';
+const EXPENSE  = 'expense';
+const RESEVOIR = 'resevoir';
 
 class Graph extends Component {
   constructor() {
@@ -15,14 +21,14 @@ class Graph extends Component {
     this.state = {
       flows:
         [
-          { id: 1, name: 'paycheck', amt: 5000.00, type: "income",   category: 'paycheck' },
-          { id: 2, name: 'etsy',     amt: 250.00,  type: "income",   category: 'side-hustle' },
-          { id: 3, name: 'kombucha', amt: 50.00,   type: "expense",  category: 'food/drink' },
-          { id: 4, name: ''        , amt: 0,       type: "resevoir", category: 'resevoir' },
+          { id: 1, name: 'paycheck', amt: 5000.00, type: INCOME,   category: 'paycheck' },
+          { id: 2, name: 'etsy',     amt: 250.00,  type: INCOME,   category: 'side-hustle' },
+          { id: 3, name: 'kombucha', amt: 50.00,   type: EXPENSE,  category: 'food/drink' },
+          { id: 4, name: ''        , amt: 0,       type: RESEVOIR, category: RESEVOIR},
         ],
       name      : '',
       amt       : 0,
-      type      : "income",
+      type      : INCOME,
       category  : 'misc',
       modalOpen : false,
     }
@@ -121,12 +127,26 @@ class Graph extends Component {
     }
   }
 
+  largestIncome = () => {
+    const flows = this.state.flows;
+    let largestVal = 0;
+    let largestIndex = 0
+    for (let i = 0; i < flows.length; i++) {
+      if (flows[i].type !== INCOME) continue;
+      if (flows[i].amt > largestVal) {
+        largestVal = flows[i].amt;
+        largestIndex = i;
+      }
+    }
+    return flows[largestIndex];
+  }
+
   handleChange = (e, { name, value }) => {
     return this.setState({ [name]: value })
   }
 
   handleSubmit = () => {
-    const {name, amt, category, flows} = this.state;
+    const {name, amt, type, category, flows} = this.state;
     
     // If a flow with the entered name exists, add it to that flow's amt
     let newFlows = [];
@@ -141,7 +161,7 @@ class Graph extends Component {
 
     if (!flowExists) {
       const id = flows.length + 1
-      newFlows.push({name, amt, category, id})
+      newFlows.push({name, amt, category, id, type})
     }
 
     this.setState({
@@ -153,6 +173,7 @@ class Graph extends Component {
   }
 
   handleOpen = () => this.setState({ modalOpen: true })
+
   handleClose = () => {
     this.setState({ modalOpen: false })
   }
@@ -162,10 +183,10 @@ class Graph extends Component {
     const links = this.createLinks(nodes);
     const { name, amt } = this.state;
     const options = [
-      { key: "Income", name: 'type', text: "Income", value: "income" },
-      { key: "Expense", name: 'type', text: "Expense", value: "expense" },
+      { key: "Income", name: 'type', text: "Income", value: INCOME },
+      { key: "Expense", name: 'type', text: "Expense", value: EXPENSE },
     ]
-    
+    console.log(this.state)
     return (
       <Container>
         <Sankey
@@ -174,27 +195,33 @@ class Graph extends Component {
           width={1000}
           height={500}
         />
-        <Modal 
+        <Modal
           trigger={<Button onClick={this.handleOpen}>Add Flow</Button>}
           open={this.state.modalOpen}
           onClose={this.handleClose}
-          >
+        >
           <Modal.Header>Add a Flow</Modal.Header>
           <Modal.Content>
             <Form onSubmit={this.handleSubmit}>
               <Form.Group>
-                <Form.Input fluid label="Name" name="name" value={name} onChange={this.handleChange}/>
+                <Form.Input fluid label="Name" name="name" value={name} onChange={this.handleChange} />
               </Form.Group>
               <Form.Group widths="equal">
-                <Form.Input label="Amount" name="amt"  value={amt}  onChange={this.handleChange}/>
+                <Form.Input label="Amount" name="amt" value={amt} onChange={this.handleChange} />
                 <Form.Select options={options} placeholder="Type..." />
               </Form.Group>
               <Modal.Actions>
-              <Form.Button content='Submit'/>
+                <Form.Button content='Submit' />
               </Modal.Actions>
             </Form>
           </Modal.Content>
         </Modal>
+        <Statistic.Group widths='one'>
+          <Statistic color="green">
+            <Statistic.Value><Icon name='dollar' />{this.largestIncome().amt}</Statistic.Value>
+            <Statistic.Label>Largest Income: {this.largestIncome().name}</Statistic.Label>
+          </Statistic>
+        </Statistic.Group>
       </Container>
 
     );
